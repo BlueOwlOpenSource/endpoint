@@ -6,13 +6,16 @@ import (
 	"reflect"
 )
 
-// HandlerStaticInjectorType: invoked once at startup and never again.
+// HandlerStaticInjectorType: handlers that match this type signature
+// are invoked once at startup and never again.
+//
 // These should not return mutable objects because their
 // return values are retained indefinitely and shared between
 // simultaneous requests.
 type HandlerStaticInjectorType func(TypeMoreInputsExcludingRequest) TypeMoreOutputsExcludingRequest
 
-// HandlerInjectorType: invoked once per request (or more if re-invoked by middleware)
+// HandlerInjectorType: handlers that match this type signature
+// are invoked once per request (or more if re-invoked by middleware)
 // Their return values are made available to all handlers to their right
 // in the handler list.
 //
@@ -21,15 +24,28 @@ type HandlerStaticInjectorType func(TypeMoreInputsExcludingRequest) TypeMoreOutp
 // looks the same!  The difference is that a static injector cannot take an
 // argument of type http.ResponseWriter or *http.Request.  Once either of
 // those types as been seen as a parameter in the handler list, then anything
+// to the right of it
 // that looks like an injector will be considered a regular injector rather
 // than a static injector.
+//
+// Injectors are only invoked if their output values are consumed by
+// another handler that will be executed.  Injectors that have no outputs
+// are always invoked.
 type HandlerInjectorType func(TypeMoreInputs) TypeMoreOutputs
 
-// HandlerFallibleInjectorType: invoked once per request (or more if middleware
-// re-invokes).  These are injectors that can fail.  If they fail, no
+// HandlerFallibleInjectorType: handlers taht match this type signature
+// will be invoked once per request (or more if middleware
+// re-invokes).  
+//
+// These are a special kind of injector: they can fail.
+//
+// If they fail, no
 // additional injectors, or middleware will be invoked.  The endpoint handler
 // will not be invoked.  The error return from the fallible injector must
 // be caught by an earlier (to the left in the call chain) middleware handler.
+//
+// In all other respects these are the same as injectors that match
+// the HandlerInjectorType type signature.
 type HandlerFallibleInjectorType func(TypeMoreInputs) (TerminalError, TypeMoreOutputs)
 
 // HandlerEndpointType: The function signature of an endpoint cannot be differentiated
@@ -39,13 +55,15 @@ type HandlerFallibleInjectorType func(TypeMoreInputs) (TerminalError, TypeMoreOu
 // All return values must be consumed by at least one handler.
 type HandlerEndpointType func(TypeMoreInputs) TypeMoreReturnValues
 
-// Middleware: invoked once per request (or more if middleware re-invokes).
+// HandlerMiddlewareType: handlers that match this type signature wrap all
+// downstream handlers.  They are invoked once per request (or more if middleware re-invokes).
 //
 // Middleware handlers take one function with an anonymous type.
 // This function, we'll call it inner(), is called by the middleware
-// function to invoke all the handlers that come after (to the right)
-// of the middlerware handler.  It can call
-// inner() more than once if it wants to.  The parameters that the middlewar handler passes
+// function to invoke all the downstream handlers (that come after the middleware handler in
+// the list of handlers)
+//
+// It can call inner() more than once if it wants to.  The parameters that the middlewar handler passes
 // to inner() are made available to all handlers to the middleware's right.
 // The values returned by inner() must be things that were returned by
 // handlers after the middleware.  The return value from the middleware handler is made available
@@ -58,49 +76,54 @@ type HandlerMiddlewareType func(TypeInnerType, TypeMoreInputs) TypeMoreReturnVal
 // values must be things returned from handlers after the middleware handler.
 type TypeInnerType func(TypeMoreOutputs) TypeMoreReturnedValues
 
-// TypeMoreInputsExcludingRequest is a dummy type used to define and explain
+// TypeMoreInputsExcludingRequest is a dummy type used to document
 // other types. In a list, this can be zero or more than one item.
 // These additional parameters or return values must all have distinct
 // types (no duplicates in the same set) and may not include un-typed func types.
 // It is used to indicate a place where any number of parameters can go
 type TypeMoreInputsExcludingRequest interface{}
 
-// TypeMoreInputs is a dummy type used to define and explain
+// TypeMoreInputs is a dummy type used to document
 // other types. In a list, this can be zero or more than one item.
 // These additional parameters or return values must all have distinct
 // types (no duplicates in the same set) and may not include un-typed func types.
 // It is used to indicate a place where any number of parameters can go
 type TypeMoreInputs interface{}
 
-// TypeMoreOutputs is a dummy type used to define and explain
+// TypeMoreOutputs is a dummy type used to document
 // other types. In a list, this can be zero or more than one item.
 // These additional parameters or return values must all have distinct
 // types (no duplicates in the same set) and may not include un-typed func types.
 // It is used to indicate a place where any number of parameters or return values can go
 type TypeMoreOutputs interface{}
 
-// TypeMoreOutputsExcludingRequest is a dummy type used to define and explain
+// TypeMoreOutputsExcludingRequest is a dummy type used to document
 // other types. In a list, this can be zero or more than one item.
 // These additional parameters or return values must all have distinct
 // types (no duplicates in the same set) and may not include un-typed func types.
 // It is used to indicate a place where any number of return values can go
 type TypeMoreOutputsExcludingRequest interface{}
 
-// TypeMoreReturnValues is a dummy type used to define and explain
+// TypeMoreReturnValues is a dummy type used to document
 // other types. In a list, this can be zero or more than one item.
 // These additional parameters or return values must all have distinct
 // types (no duplicates in the same set) and may not include un-typed func types.
 // It is used to indicate a place where any number of return values can go
 type TypeMoreReturnValues interface{}
 
-// TypeMoreReturnedValues is a dummy type used to define and explain
+// TypeMoreReturnedValues is a dummy type used to document
 // other types. In a list, this can be zero or more than one item.
 // These additional parameters or return values must all have distinct
 // types (no duplicates in the same set) and may not include un-typed func types.
 // It is used to indicate a place where any number of return values can go
 type TypeMoreReturnedValues interface{}
 
-// It is used to terminate injection, gets translated to error
+// TerminalError is a standard error interface.  For fallible injectors
+// (matching the HandlerFallibleInjectorType type signature), TerminalError
+// must be the first return value. 
+// 
+// A non-nil return value terminates the handler call chain.   All return
+// values, including TerminalError must be consumed by an upstream handler.
 type TerminalError interface {
 	error
 }

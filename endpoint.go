@@ -1,15 +1,3 @@
-// Package endpoint provides wrappers to allow http endpoints to register themselves.
-//
-// Endpoints are generally tied to services.
-//
-// Services can be pre-registered and started later or they can be registered
-// and stated immediately.  Services can be started with a binder that matches
-// http.HandlerFunc, or they can be started with a *mux.Router.  Combined with
-// the pre-register vs. start immedidately, services come in four flavors:
-// ServiceRegistration, Service, ServiceRegistrationWithMux, and ServiceWithMux.
-//
-// Here's an example:
-
 package endpoint
 
 // TODO: tests for CallsInner annotation
@@ -80,8 +68,8 @@ func (r *EndpointRegistration) Start(path string, binder EndpointBinder, preInje
 	binder(path, r.finalFunc)
 }
 
-// Start and endpoint: invokes the endpoint and binds it to the
-// path.   If called more than once, subsequent calls to
+// Start an endpoint: invokes the endpoint and binds it to the  path.   
+// If called more than once, subsequent calls to
 // EndpointRegistrationWithMux methods that act on the route will
 // only act on the last route bound.
 func (r *EndpointRegistrationWithMux) Start(
@@ -102,7 +90,7 @@ func (r *EndpointRegistrationWithMux) Start(
 	return r.route
 }
 
-// Create a http.HandlerFunc from a list of handlers.  This bypasses Service,
+// CreateEndpoint generates a http.HandlerFunc from a list of handlers.  This bypasses Service,
 // ServiceRegistration, ServiceWithMux, and ServiceRegistrationWithMux.  The
 // static initializers are invoked immedately.
 func CreateEndpoint(funcs ...interface{}) func(http.ResponseWriter, *http.Request) {
@@ -116,7 +104,7 @@ func CreateEndpoint(funcs ...interface{}) func(http.ResponseWriter, *http.Reques
 	return reg.finalFunc
 }
 
-// Pre-register an endpoint.  The provided funcs must all match one of the
+// RegisterEndpoint pre-registers an endpoint.  The provided funcs must all match one of the
 // following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
 // WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
 // Static injectors first and the endpoint last.
@@ -140,7 +128,7 @@ func (s *ServiceRegistration) RegisterEndpoint(path string, funcs ...interface{}
 	return r
 }
 
-// Register and immedately start an endpoint
+// RegisterEndpoint registers and immedately starts an endpoint.
 // The provided funcs must all match one of the
 // following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
 // WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
@@ -160,7 +148,7 @@ func (s *Service) RegisterEndpoint(path string, funcs ...interface{}) *EndpointR
 	return r
 }
 
-// Pre-register an endpoint.  The provided funcs must all match one of the
+// RegisterEndpoint pre-registers an endpoint.  The provided funcs must all match one of the
 // following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
 // WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
 // Static injectors first and the endpoint last.
@@ -186,7 +174,7 @@ func (s *ServiceRegistrationWithMux) RegisterEndpoint(path string, funcs ...inte
 	return wmux
 }
 
-// Register and immediately start an endpoint.
+// RegisterEndpoint registers and immediately starts an endpoint.
 // The provided funcs must all match one of the
 // following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
 // WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
