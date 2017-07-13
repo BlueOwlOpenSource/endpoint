@@ -2,22 +2,35 @@
 
 [GoDoc](https://godoc.org/github.com/BlueOwlOpenSource/endpoint)
 
-This package provides way to organize injectors and wrappers when creating http handlers (endpoints).
-When using the pre-register variants of creating services, it allows individual endpoints to
-self-register.
+This package attempts to solve several issues with http endpoint handlers:
 
-Services can be pre-registered and started later or they can be registered
-and stated immediately.  Services can be started with a binder that matches
-http.HandlerFunc, or they can be started with a *mux.Router.  Combined with
-the pre-register vs. start immedidately, services come in four flavors:
-ServiceRegistration, Service, ServiceRegistrationWithMux, and ServiceWithMux.
+ * Chaining actions to create composite handlers 
+ * Wrapping endpoint handlers with before/after actions
+ * Dependency injection for endpoint handlers
+ * Binding handlers to their endpoints next to the code that defines the endpoints
+ * Delaying initialization code execution until services are started allowing services that are not used to remain uninitialized
+ * Reducing the cost of refactoring endpoint handlers passing data directly from producers to consumers without needing intermediaries to care about what is being passed
+ * Avoid the overhead of verifying that requested items are present when passed indirectly (a common problem when using context.Context to pass data indirectly)
 
-Endpoint provides a clean way to wrap endpoint implementations and factor out common
-code from endpoints.  Example useses include:
+It does this by defining endpoints as a sequence of handler functions.  Handler functions
+come in different flavors.  Data is passed from one handler to the next using reflection to 
+match the output types with input types requested later in the handler chain.  To the extent
+possible, the handling is precomputed so there is very little reflection happening when the
+endpoint is actually invoked.
+
+Endpoints are registered to services before or after the service is started.
+
+When services are pre-registered and started later, it is possible to bind endpoints
+to them in init() functions and thus colocate the endpoint binding with the endpoint
+definition and spread the endpoint definition across multiple files and/or packages.
+
+Services come in two flavors: one flavor binds endpoints with http.HandlerFunc and the
+other binds using mux.Router.  
+
+Example uses include:
 
  * Turning output structs into json
  * Common error handling
  * Common logging
  * Common initialization
  * Injection of resources and dependencies
-

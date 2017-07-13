@@ -26,6 +26,12 @@ type HandlerCollection struct {
 // Since handlers will be invoked in order, this also implies
 // that nothing that follows this handler is a static injector.
 //
+// For example:
+//
+//	var InjectCurrentTime = AnnotateNotStatic(func() time.Time {
+//		return time.Now()
+//	})
+//
 // EXPERIMENTAL FEATURE. MAY BE REMOVED.
 func AnnotateNotStatic(handlerOrCollection interface{}) interface{} {
 	return annotateNotStatic(handlerOrCollection)
@@ -40,8 +46,20 @@ var annotateNotStatic = makeAnnotate(func(fm *funcOrigin) {
 // an injector that produces at least one type and none of the
 // types that the injector produce are consumed dropped from the
 // dropped from the handler list.  If AnnotateSideEffects() is
-// used to wrap that injector, then the injector will not be
-// droped as useless.
+// used to wrap that injector, then the injector will be invoked
+// even though its output is not used.
+//
+// For example:
+//
+//	var counter = 0
+//	var counterLock sync.Mutex
+//      type InvocationCounter int
+//	var CountEndpointInvocations = AnnotateSideEffects(func() InvocationCounter {
+//		counterLock.Lock()
+//		counter++
+//		counterLock.Unlock()
+//		return InvocationCounter(counter)
+//	})
 //
 // EXPERIMENTAL FEATURE. MAY BE REMOVED.
 func AnnotateSideEffects(handlerOrCollection interface{}) interface{} {
@@ -56,10 +74,9 @@ var annotateSideEffects = makeAnnotate(func(fm *funcOrigin) {
 // marks that HandlerMiddlewareType handler as guaranteed to call
 // inner().  This is important only in the case when a downstream
 // handler is returning a value consumed by an upstream HandlerMiddlewareType
-// handler and that value has no easy zero value that can be
-// injected by the HandlerMiddlewareType handler in the event that inner()
-// is not called.  Without AnnotateCallsInner(), some handler
-// sequences may be rejected.
+// handler and that value has no zero value that reflect can generate
+// in the event that inner() is not called.  
+// Without AnnotateCallsInner(), some handler  sequences may be rejected.
 //
 // EXPERIMENTAL FEATURE. MAY BE REMOVED.
 func AnnotateCallsInner(handlerOrCollection interface{}) interface{} {
@@ -134,11 +151,11 @@ type funcOrigin struct {
 type injectionWish typeCode
 
 // AutoInject makes a promise that values will be provided
-// to the service via Inject() before the service is started.  This is done
+// to the service via service.Inject() before the service is started.  This is done
 // by either providing an example of the type or by providing a reflect.Type.
 // The value provided is not retained, just the type of the value provided.
 //
-// This only applies to pre-registered services.
+// This is only relevant for pre-registered services.
 //
 // EXPERIMENTAL FEATURE. MAY BE REMOVED.
 func AutoInject(v interface{}) injectionWish {
@@ -164,7 +181,7 @@ func NewHandlerCollection(name string, funcs ...interface{}) *HandlerCollection 
 	return newHandlerCollection(name, false, funcs...)
 }
 
-// NewHandlerCollectionWithEndpoint creates a handler collection that includes an endpoint
+// NewHandlerCollectionWithEndpoint creates a handler collection that includes an endpoint.
 func NewHandlerCollectionWithEndpoint(name string, funcs ...interface{}) *HandlerCollection {
 	return newHandlerCollection(name, true, funcs...)
 }
@@ -277,6 +294,8 @@ func (c *HandlerCollection) forEach(fn func(*funcOrigin)) {
 //
 // PreRegsteredServices do not initialize or bind to handlers until
 // they are Start()ed.
+//
+// The name of the service is just used for error messages and is otherwise ignored.
 func PreRegisterService(name string, funcs ...interface{}) *ServiceRegistration {
 	return registerService(name, funcs...)
 }
@@ -298,6 +317,8 @@ func RegisterService(name string, binder EndpointBinder, funcs ...interface{}) *
 //
 // PreRegsteredServices do not initialize or bind to handlers until
 // they are Start()ed.
+//
+// The name of the service is just used for error messages and is otherwise ignored.
 func PreRegisterServiceWithMux(name string, funcs ...interface{}) *ServiceRegistrationWithMux {
 	return registerServiceWithMux(name, funcs...)
 }
@@ -338,14 +359,12 @@ func registerServiceWithMux(name string, funcs ...interface{}) *ServiceRegistrat
 	}
 }
 
-// To start a ServiceRegistration, you must pass a binder to bind
-// the endpoint to a route.
-//
-// This is the simple binder function signature.
+// EndpointBinder is the signature of the binding function
+// used to start a ServiceRegistration.
 type EndpointBinder func(path string, fn http.HandlerFunc)
 
-// Run all staticInjectors for all endpoints pre-registered with this
-// service.  Bind all enpoints and start listening.   Start() may
+// Start runs all staticInjectors for all endpoints pre-registered with this
+// service.  Bind all endpoints and starts listening.   Start() may
 // only be called once.
 func (s *ServiceRegistration) Start(binder EndpointBinder) *Service {
 	s.lock.Lock()
@@ -354,7 +373,7 @@ func (s *ServiceRegistration) Start(binder EndpointBinder) *Service {
 		panic("duplicate call to Start()")
 	}
 	for path, endpoint := range s.endpoints {
-		endpoint.Start(path, binder, s.collection.injections)
+		endpoint.start(path, binder, s.collection.injections)
 	}
 	svc := &Service{
 		Name:       s.Name,
@@ -366,7 +385,7 @@ func (s *ServiceRegistration) Start(binder EndpointBinder) *Service {
 	return svc
 }
 
-// Provide a value for one of the types promised by AutoInject
+// Inject provides a value for one of the types promised by AutoInject.
 func (s *ServiceRegistration) Inject(v interface{}) *ServiceRegistration {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -376,7 +395,7 @@ func (s *ServiceRegistration) Inject(v interface{}) *ServiceRegistration {
 
 type endpointBinderWithMux func(string, func(http.ResponseWriter, *http.Request)) *mux.Route
 
-// Provide a value for one of the types promised by AutoInject
+// Inject provides a value for one of the types promised by AutoInject.
 func (s *ServiceRegistrationWithMux) Inject(v interface{}) *ServiceRegistrationWithMux {
 	s.collection.injections[GetTypeCode(reflect.TypeOf(v))] = v
 	return s
@@ -392,7 +411,7 @@ func (s *ServiceRegistrationWithMux) Start(router *mux.Router) *ServiceWithMux {
 	}
 	for path, el := range s.endpoints {
 		for _, endpoint := range el {
-			endpoint.Start(path, router.HandleFunc, s.collection.injections)
+			endpoint.start(path, router.HandleFunc, s.collection.injections)
 		}
 	}
 	svc := &ServiceWithMux{
