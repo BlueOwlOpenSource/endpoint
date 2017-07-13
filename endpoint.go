@@ -59,7 +59,7 @@ type wrapperCollection struct {
 
 // Start and endpoint: invokes the endpoint and binds it to the
 // path.
-func (r *EndpointRegistration) Start(path string, binder EndpointBinder, preInject map[typeCode]interface{}) {
+func (r *EndpointRegistration) start(path string, binder EndpointBinder, preInject map[typeCode]interface{}) {
 	r.path = path
 	if !r.bound {
 		r.initialize(preInject)
@@ -72,7 +72,7 @@ func (r *EndpointRegistration) Start(path string, binder EndpointBinder, preInje
 // If called more than once, subsequent calls to
 // EndpointRegistrationWithMux methods that act on the route will
 // only act on the last route bound.
-func (r *EndpointRegistrationWithMux) Start(
+func (r *EndpointRegistrationWithMux) start(
 	path string,
 	binder endpointBinderWithMux,
 	preInject map[typeCode]interface{},
@@ -123,7 +123,7 @@ func (s *ServiceRegistration) RegisterEndpoint(path string, funcs ...interface{}
 	r := buildRegistrationPass1(s.collection, path, funcs...)
 	s.endpoints[path] = r
 	if s.started != nil {
-		r.Start(path, s.started.binder, s.collection.injections)
+		r.start(path, s.started.binder, s.collection.injections)
 	}
 	return r
 }
@@ -144,7 +144,7 @@ func (s *Service) RegisterEndpoint(path string, funcs ...interface{}) *EndpointR
 	}
 	r := buildRegistrationPass1(s.collection, path, funcs...)
 	s.endpoints[path] = r
-	r.Start(path, s.binder, s.collection.injections)
+	r.start(path, s.binder, s.collection.injections)
 	return r
 }
 
@@ -169,7 +169,7 @@ func (s *ServiceRegistrationWithMux) RegisterEndpoint(path string, funcs ...inte
 	}
 	s.endpoints[path] = append(s.endpoints[path], wmux)
 	if s.started != nil {
-		wmux.Start(path, s.started.binder, s.collection.injections)
+		wmux.start(path, s.started.binder, s.collection.injections)
 	}
 	return wmux
 }
@@ -188,7 +188,7 @@ func (s *ServiceWithMux) RegisterEndpoint(path string, funcs ...interface{}) *mu
 		muxroutes:            make([]func(*mux.Route) *mux.Route, 0),
 	}
 	s.endpoints[path] = append(s.endpoints[path], wmux)
-	return wmux.Start(path, s.binder, s.collection.injections)
+	return wmux.start(path, s.binder, s.collection.injections)
 }
 
 func buildRegistrationPass1(sc *HandlerCollection, path string, funcs ...interface{}) *EndpointRegistration {

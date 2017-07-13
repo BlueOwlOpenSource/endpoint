@@ -373,7 +373,7 @@ func (s *ServiceRegistration) Start(binder EndpointBinder) *Service {
 		panic("duplicate call to Start()")
 	}
 	for path, endpoint := range s.endpoints {
-		endpoint.Start(path, binder, s.collection.injections)
+		endpoint.start(path, binder, s.collection.injections)
 	}
 	svc := &Service{
 		Name:       s.Name,
@@ -411,7 +411,7 @@ func (s *ServiceRegistrationWithMux) Start(router *mux.Router) *ServiceWithMux {
 	}
 	for path, el := range s.endpoints {
 		for _, endpoint := range el {
-			endpoint.Start(path, router.HandleFunc, s.collection.injections)
+			endpoint.start(path, router.HandleFunc, s.collection.injections)
 		}
 	}
 	svc := &ServiceWithMux{
