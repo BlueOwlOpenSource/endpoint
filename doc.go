@@ -18,7 +18,7 @@ can all be used to provide data and code to downstream handlers.  Downstream
 handlers request what they need by including appropriate types in their
 argument lists.  Injectors are invoked only if their outputs are consumed.
 
-Code juxtiposition: when using pre-registered services, endpoint binding can
+Code juxtaposition: when using pre-registered services, endpoint binding can
 be registered next to the code that implements the endpoint even if the endpoints
 are implemented in multiple files and/or packages.
 
@@ -53,7 +53,7 @@ Handler is a function that is used to help define an endpoint.
 
 Handler collection is a group of handlers.
 
-Downstream handlers are handler that are to the right of the current hanlder
+Downstream handlers are handlers that are to the right of the current handler
 in the list of handlers.  They will be invoked after the current handler.
 
 Upstream handlers are handlers that are to the left of the current handler
@@ -71,8 +71,8 @@ with without.
 
 Pre-registered services are not initialized until they are Start()ed.  This
 allows them to depend upon resources that may not may not be available without
-causing a startup panic unless they're started without their required resrouces.
-It also allows endpoints to be regisered in init() functions next to the
+causing a startup panic unless they're started without their required resources.
+It also allows endpoints to be registered in init() functions next to the
 definition of the endpoint.
 
 Handlers
@@ -85,7 +85,7 @@ handler can be used by any handler to its right and then as the
 handlers return, the data returned can be used by any handler to its
 left.  The data provided and required is identified by its type.
 Since Go makes it easy to make aliases of types, it is easy to make
-types distict.  When there is not an exact match of types, the framework
+types distinct.  When there is not an exact match of types, the framework
 will use the closest (in distance) value that can convert to the
 required type.
 
