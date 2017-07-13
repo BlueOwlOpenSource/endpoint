@@ -11,6 +11,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// The endpoint framework distinguishes parameters based on their types.
+// All parameters of type "string" look the same, but a type that is
+// defined as another type (like exampleType) is a different type.
 type exampleType string
 
 // exampleStaticInjector will not be called until the service.Start()
@@ -22,6 +25,7 @@ func exampleStaticInjector() exampleType {
 
 type returnValue interface{}
 
+// jsonifyResult wraps all hanlders downstream of it in the call chain.
 func jsonifyResult(inner func() returnValue, w http.ResponseWriter) {
 	v := inner()
 	w.Header().Set("Content-Type", "application/json")
@@ -35,15 +39,23 @@ var service = endpoint.PreRegisterServiceWithMux("example-service",
 	jsonifyResult)
 
 func init() {
-	service.RegisterEndpoint("/example",
-		func(sv exampleType) returnValue {
-			return map[string]string{
-				"static value": string(sv),
-			}
-		})
+	// The /example endpoint is bound to a handler chain
+	// that combines the functions included at the service
+	// level and the functions included here.  The final chain is:
+	//	exampleStaticInjector, jsonifyResult, exampleEndpoint
+	service.RegisterEndpoint("/example", exampleEndpoint)
 }
 
-// Example_PreRegisterServiceWithMux demonstrates use of service pre-registration.
+// This is the final endpoint handler.
+func exampleEndpoint(sv exampleType) returnValue {
+	return map[string]string{
+		"static value": string(sv),
+	}
+}
+
+// The code below puts up a test http server, hits the /example
+// endpoint, decodes the response, prints it, and exits.  This
+// is just to excercise the endpoint defined above.
 func Example() {
 	muxRouter := mux.NewRouter()
 	service.Start(muxRouter)

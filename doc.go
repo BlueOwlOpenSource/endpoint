@@ -5,9 +5,9 @@ Package endpoint is a general purpose web server framework that provides a
 concise way to handle errors and inject dependencies into http endpoint
 handlers.
 
-Why?
+Why
 
-Composite endpoints: endpoints are assembled from a collection handlers.  
+Composite endpoints: endpoints are assembled from a collection handlers.
 
 Before/after actions: the middleware handler type wraps the rest of the
 handler chain so that it can both inject items that are used downstream
@@ -49,7 +49,7 @@ Terminology
 Service is a collection of endpoints that can be started together and may share
 a handler collection.
 
-Handler is a function that is used to help define an endpoint. 
+Handler is a function that is used to help define an endpoint.
 
 Handler collection is a group of handlers.
 
@@ -100,6 +100,15 @@ Static Injectors, Injectors, Endpoints, and Middleware.
 
 Injectors are only invoked if their output is consumed or they have
 no output.  Middleware handlers are (currently) always invoked.
+
+Panics
+
+Endpoint will panic during endpoint registration if the provided handlers
+do not constitute a valid chain.  For example, if a some handler requires
+a FooType but there is no upstream handler that provides a FooType then
+the handler list is invalid and endpoint will panic.
+
+Endpoint should not panic after initialization.
 
 */
 package endpoint
