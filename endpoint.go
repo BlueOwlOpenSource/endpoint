@@ -109,8 +109,8 @@ func CreateEndpoint(funcs ...interface{}) func(http.ResponseWriter, *http.Reques
 }
 
 // RegisterEndpoint pre-registers an endpoint.  The provided funcs must all match one of the
-// following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
-// WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
+// handler types.
+// The functions provided are invoked in-order.
 // Static injectors first and the endpoint last.
 //
 // The return value does not need to be retained -- it is also remembered
@@ -133,9 +133,8 @@ func (s *ServiceRegistration) RegisterEndpoint(path string, funcs ...interface{}
 }
 
 // RegisterEndpoint registers and immedately starts an endpoint.
-// The provided funcs must all match one of the
-// following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
-// WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
+// The provided funcs must all match one of handler types.
+// The functions provided are invoked in-order.
 // Static injectors first and the endpoint last.
 //
 // The return value does not need to be retained -- it is also remembered
@@ -153,8 +152,8 @@ func (s *Service) RegisterEndpoint(path string, funcs ...interface{}) *EndpointR
 }
 
 // RegisterEndpoint pre-registers an endpoint.  The provided funcs must all match one of the
-// following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
-// WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
+// handler types.
+// The functions provided are invoked in-order.
 // Static injectors first and the endpoint last.
 //
 // The return value does not need to be retained -- it is also remembered
@@ -179,9 +178,8 @@ func (s *ServiceRegistrationWithMux) RegisterEndpoint(path string, funcs ...inte
 }
 
 // RegisterEndpoint registers and immediately starts an endpoint.
-// The provided funcs must all match one of the
-// following function signatures: HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType,
-// WrapperType and HandlerEndpointType.  The functions provided are invoked in-order.
+// The provided funcs must all match one of the handler types.
+// The functions provided are invoked in-order.
 // Static injectors first and the endpoint last.
 func (s *ServiceWithMux) RegisterEndpoint(path string, funcs ...interface{}) *mux.Route {
 	s.lock.Lock()

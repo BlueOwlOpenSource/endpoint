@@ -271,7 +271,7 @@ var checkMatchTests = []struct {
 }{
 	{
 		func() {},
-		reflect.TypeOf((*TypeMoreInputs)(nil)).Elem(),
+		reflect.TypeOf((*typeMoreInputs)(nil)).Elem(),
 		false,
 		nil, nil,
 		nil, nil,

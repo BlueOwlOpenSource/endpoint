@@ -70,13 +70,16 @@ var annotateSideEffects = makeAnnotate(func(fm *funcOrigin) {
 	fm.sideEffects = true
 })
 
-// AnnotateCallsInner wraps any handler func argument
-// marks that HandlerMiddlewareType handler as guaranteed to call
+// AnnotateCallsInner wraps middleware handlers and marks that the
+// middleware handler as guaranteed to call
 // inner().  This is important only in the case when a downstream
-// handler is returning a value consumed by an upstream HandlerMiddlewareType
+// handler is returning a value consumed by an upstream middleware
 // handler and that value has no zero value that reflect can generate
 // in the event that inner() is not called.
-// Without AnnotateCallsInner(), some handler  sequences may be rejected.
+// Without AnnotateCallsInner(), some handler  sequences may be rejected
+// due to being unable to create zero values.
+//
+// Using AnnotateCallsInner on other handlers is a no-op.
 //
 // EXPERIMENTAL FEATURE. MAY BE REMOVED.
 func AnnotateCallsInner(handlerOrCollection interface{}) interface{} {
@@ -171,8 +174,7 @@ func AutoInject(v interface{}) injectionWish {
 // The name of the collection is used for error messages and is otherwise
 // irrelevant.
 //
-// The passed in funcs must match one of the following signatures:
-// HandlerStaticInjectorType, HandlerInjectorType, HandlerMiddlewareType, WrapperType.
+// The passed in funcs must match one of the handler types.
 //
 // When combining handler collections and lists of handlers, static injectors
 // may be pulled from handler collections and treated as static injectors even if

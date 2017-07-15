@@ -6,120 +6,32 @@ import (
 	"reflect"
 )
 
-// HandlerStaticInjectorType: handlers that match this type signature
-// are invoked once at startup and never again.
-//
-// These should not return mutable objects because their
-// return values are retained indefinitely and shared between
-// simultaneous requests.
-type HandlerStaticInjectorType func(TypeMoreInputsExcludingRequest) TypeMoreOutputsExcludingRequest
+type handlerStaticInjectorType func(typeMoreInputsExcludingRequest) typeMoreOutputsExcludingRequest
 
-// HandlerInjectorType: handlers that match this type signature
-// are invoked once per request (or more if re-invoked by middleware)
-// Their return values are made available to all handlers to their right
-// in the handler list.
-//
-// Injectors are called during the handling of a request.  They do not
-// wrap the other calls.  The signature for injectors and static injectors
-// looks the same!  The difference is that a static injector cannot take an
-// argument of type http.ResponseWriter or *http.Request.  Once either of
-// those types as been seen as a parameter in the handler list, then anything
-// to the right of it
-// that looks like an injector will be considered a regular injector rather
-// than a static injector.
-//
-// Injectors are only invoked if their output values are consumed by
-// another handler that will be executed.  Injectors that have no outputs
-// are always invoked.
-type HandlerInjectorType func(TypeMoreInputs) TypeMoreOutputs
+type handlerInjectorType func(typeMoreInputs) typeMoreOutputs
 
-// HandlerFallibleInjectorType: handlers that match this type signature
-// will be invoked once per request (or more if middleware
-// re-invokes).
-//
-// These are a special kind of injector: they can fail.
-//
-// If they fail, no
-// additional injectors, or middleware will be invoked.  The endpoint handler
-// will not be invoked.  The error return from the fallible injector must
-// be caught by an earlier (to the left in the call chain) middleware handler.
-//
-// In all other respects these are the same as injectors that match
-// the HandlerInjectorType type signature.
-type HandlerFallibleInjectorType func(TypeMoreInputs) (TerminalError, TypeMoreOutputs)
+type handlerFallibleInjectorType func(typeMoreInputs) (TerminalError, typeMoreOutputs)
 
-// HandlerEndpointType: The function signature of an endpoint cannot be differentiated
-// from the function signature of an injector.  An endpoint is simply the
-// rightmost handler.  The last handler must be an endpoint.  The return
-// values from an endpoint are made available to all preceeding handlers.
-// All return values must be consumed by at least one handler.
-type HandlerEndpointType func(TypeMoreInputs) TypeMoreReturnValues
+type handlerEndpointType func(typeMoreInputs) typeMoreReturnValues
 
-// HandlerMiddlewareType: handlers that match this type signature wrap all
-// downstream handlers.  They are invoked once per request (or more if middleware re-invokes).
-//
-// Middleware handlers take one function with an anonymous type.
-// This function, we'll call it inner(), is called by the middleware
-// function to invoke all the downstream handlers (that come after the middleware handler in
-// the list of handlers)
-//
-// It can call inner() more than once if it wants to.  The parameters that the middlewar handler passes
-// to inner() are made available to all handlers to the middleware's right.
-// The values returned by inner() must be things that were returned by
-// handlers after the middleware.  The return value from the middleware handler is made available
-// to the handlers that came before the middleware handler.
-type HandlerMiddlewareType func(TypeInnerType, TypeMoreInputs) TypeMoreReturnValues
+type handlerMiddlewareType func(typeInnerType, typeMoreInputs) typeMoreReturnValues
 
-// TypeInnerType is the signature of the the inner() function that is passed to
-// the wrap() function for a middleware handler.  It's input values are
-// made available to handlers after the middleware handler and its return
-// values must be things returned from handlers after the middleware handler.
-type TypeInnerType func(TypeMoreOutputs) TypeMoreReturnedValues
+type typeInnerType func(typeMoreOutputs) typeMoreReturnedValues
 
-// TypeMoreInputsExcludingRequest is a dummy type used to document
-// other types. In a list, this can be zero or more than one item.
-// These additional parameters or return values must all have distinct
-// types (no duplicates in the same set) and may not include un-typed func types.
-// It is used to indicate a place where any number of parameters can go
-type TypeMoreInputsExcludingRequest interface{}
+type typeMoreInputsExcludingRequest interface{}
 
-// TypeMoreInputs is a dummy type used to document
-// other types. In a list, this can be zero or more than one item.
-// These additional parameters or return values must all have distinct
-// types (no duplicates in the same set) and may not include un-typed func types.
-// It is used to indicate a place where any number of parameters can go
-type TypeMoreInputs interface{}
+type typeMoreInputs interface{}
 
-// TypeMoreOutputs is a dummy type used to document
-// other types. In a list, this can be zero or more than one item.
-// These additional parameters or return values must all have distinct
-// types (no duplicates in the same set) and may not include un-typed func types.
-// It is used to indicate a place where any number of parameters or return values can go
-type TypeMoreOutputs interface{}
+type typeMoreOutputs interface{}
 
-// TypeMoreOutputsExcludingRequest is a dummy type used to document
-// other types. In a list, this can be zero or more than one item.
-// These additional parameters or return values must all have distinct
-// types (no duplicates in the same set) and may not include un-typed func types.
-// It is used to indicate a place where any number of return values can go
-type TypeMoreOutputsExcludingRequest interface{}
+type typeMoreOutputsExcludingRequest interface{}
 
-// TypeMoreReturnValues is a dummy type used to document
-// other types. In a list, this can be zero or more than one item.
-// These additional parameters or return values must all have distinct
-// types (no duplicates in the same set) and may not include un-typed func types.
-// It is used to indicate a place where any number of return values can go
-type TypeMoreReturnValues interface{}
+type typeMoreReturnValues interface{}
 
-// TypeMoreReturnedValues is a dummy type used to document
-// other types. In a list, this can be zero or more than one item.
-// These additional parameters or return values must all have distinct
-// types (no duplicates in the same set) and may not include un-typed func types.
-// It is used to indicate a place where any number of return values can go
-type TypeMoreReturnedValues interface{}
+type typeMoreReturnedValues interface{}
 
 // TerminalError is a standard error interface.  For fallible injectors
-// (matching the HandlerFallibleInjectorType type signature), TerminalError
+// (matching the handlerFallibleInjectorType type signature), TerminalError
 // must be the first return value.
 //
 // A non-nil return value terminates the handler call chain.   All return
@@ -130,13 +42,13 @@ type TerminalError interface {
 
 func init() {
 	// TODO: make sure that all type are registered
-	register(reflect.TypeOf((*TypeMoreInputs)(nil))).dummy().dummy().zeroOrMore().noAnonymous()
-	register(reflect.TypeOf((*TypeMoreInputsExcludingRequest)(nil))).dummy().zeroOrMore().noAnonymous()
-	register(reflect.TypeOf((*TypeMoreOutputs)(nil))).dummy().zeroOrMore().noAnonymous()
-	register(reflect.TypeOf((*TypeMoreOutputsExcludingRequest)(nil))).dummy().zeroOrMore().noAnonymous()
-	register(reflect.TypeOf((*TypeMoreReturnValues)(nil))).dummy().zeroOrMore().noAnonymous()
-	register(reflect.TypeOf((*TypeMoreReturnedValues)(nil))).dummy().zeroOrMore().noAnonymous()
-	register(reflect.TypeOf((*TypeInnerType)(nil))).dummy().anonymous().takes(outputParams).returns(returnedParams).noFlowType()
+	register(reflect.TypeOf((*typeMoreInputs)(nil))).dummy().dummy().zeroOrMore().noAnonymous()
+	register(reflect.TypeOf((*typeMoreInputsExcludingRequest)(nil))).dummy().zeroOrMore().noAnonymous()
+	register(reflect.TypeOf((*typeMoreOutputs)(nil))).dummy().zeroOrMore().noAnonymous()
+	register(reflect.TypeOf((*typeMoreOutputsExcludingRequest)(nil))).dummy().zeroOrMore().noAnonymous()
+	register(reflect.TypeOf((*typeMoreReturnValues)(nil))).dummy().zeroOrMore().noAnonymous()
+	register(reflect.TypeOf((*typeMoreReturnedValues)(nil))).dummy().zeroOrMore().noAnonymous()
+	register(reflect.TypeOf((*typeInnerType)(nil))).dummy().anonymous().takes(outputParams).returns(returnedParams).noFlowType()
 	register(reflect.TypeOf((*http.ResponseWriter)(nil))).dummy().notInStatic()
 	register(reflect.TypeOf((**http.Request)(nil))).dummy().notInStatic()
 	register(reflect.TypeOf((*noType)(nil))).dummy()
@@ -149,23 +61,23 @@ var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var terminalErrorType = reflect.TypeOf((*TerminalError)(nil)).Elem()
 
 // The order of these variable assignments matter for the handlers
-var middlewareFunc = register(reflect.TypeOf((*HandlerMiddlewareType)(nil))).
+var middlewareFunc = register(reflect.TypeOf((*handlerMiddlewareType)(nil))).
 	notLast().group(middlewareGroup).pastStatic().takes(inputParams).returns(returnParams).
 	FuncType
 
-var endpointFunc = register(reflect.TypeOf((*HandlerEndpointType)(nil))).
+var endpointFunc = register(reflect.TypeOf((*handlerEndpointType)(nil))).
 	last().group(endpointGroup).pastStatic().takes(inputParams).returns(returnParams).
 	FuncType
 
-var fallibleInjectorFunc = register(reflect.TypeOf((*HandlerFallibleInjectorType)(nil))).
+var fallibleInjectorFunc = register(reflect.TypeOf((*handlerFallibleInjectorType)(nil))).
 	notLast().group(middlewareGroup).pastStatic().takes(inputParams).returns(outputParams).
 	FuncType
 
-var staticInjectorFunc = register(reflect.TypeOf((*HandlerStaticInjectorType)(nil))).
+var staticInjectorFunc = register(reflect.TypeOf((*handlerStaticInjectorType)(nil))).
 	notLast().group(staticGroup).staticOnly().takes(inputParams).returns(outputParams).
 	FuncType
 
-var injectorFunc = register(reflect.TypeOf((*HandlerInjectorType)(nil))).
+var injectorFunc = register(reflect.TypeOf((*handlerInjectorType)(nil))).
 	notLast().group(middlewareGroup).pastStatic().takes(inputParams).returns(outputParams).
 	FuncType
 
@@ -232,7 +144,7 @@ func getRegistration(t reflect.Type) *typeRegistration {
 		return r
 	}
 	// TODO: register all the types in tests and then put this back
-	// if registrationsClosed && t.PkgPath() == reflect.TypeOf((*HandlerEndpointType)(nil)).Elem().PkgPath() {
+	// if registrationsClosed && t.PkgPath() == reflect.TypeOf((*handlerEndpointType)(nil)).Elem().PkgPath() {
 	//	panic(fmt.Sprintf("attempt to get registration too late on %s (%s)", t, t.PkgPath()))
 	// }
 	return &typeRegistration{
