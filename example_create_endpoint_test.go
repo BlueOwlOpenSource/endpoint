@@ -8,24 +8,13 @@ import (
 	"github.com/BlueOwlOpenSource/endpoint"
 )
 
-func WriteErrorResponse(inner func() endpoint.TerminalError, w http.ResponseWriter) {
-	err := inner()
-	if err != nil {
-		w.Write([]byte(fmt.Sprintf("Could not open database: %s", err)))
-		w.WriteHeader(500)
-	}
-}
-
-func InjectDB(driver, uri string) func() (endpoint.TerminalError, *sql.DB) {
-	return func() (endpoint.TerminalError, *sql.DB) {
-		db, err := sql.Open(driver, uri)
-		if err != nil {
-			return err, nil
-		}
-		return nil, db
-	}
-}
-
+// CreateEndpoint is the simplest way to start using the endpoint framework.  It
+// generates an http.HandlerFunc from a list of handlers.  The handlers will be called
+// in order.   In the example below, first WriteErrorResponse() will be called.  It
+// has an inner() func that it uses to invoke the rest of the chain.  When
+// WriteErrorResponse() calls it's inner() function, the db injector returned by
+// InjectDB is called.  If that does not return error, then the inline function below
+// to handle the endpint is called.
 func ExampleCreateEndpoint() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/my/endpoint", endpoint.CreateEndpoint(
@@ -35,4 +24,25 @@ func ExampleCreateEndpoint() {
 			// ....
 			return nil
 		}))
+}
+
+// WriteErrorResponse invokes the remainder of the handler chain by calling inner().
+func WriteErrorResponse(inner func() endpoint.TerminalError, w http.ResponseWriter) {
+	err := inner()
+	if err != nil {
+		w.Write([]byte(fmt.Sprintf("Could not open database: %s", err)))
+		w.WriteHeader(500)
+	}
+}
+
+// InjectDB returns a handler function that opens a database connection.   If the open
+// fails, executation of the handler chain is terminated.
+func InjectDB(driver, uri string) func() (endpoint.TerminalError, *sql.DB) {
+	return func() (endpoint.TerminalError, *sql.DB) {
+		db, err := sql.Open(driver, uri)
+		if err != nil {
+			return err, nil
+		}
+		return nil, db
+	}
 }
