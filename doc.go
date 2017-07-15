@@ -47,7 +47,8 @@ endpoints can be registered to the service and the service can be started.
 
 A simpler way to use endpoint is to use the CreateEndpoint function.  It
 converts a list of handlers into an http.HandlerFunc.  This bypasses service
-creation and endpoint registration.
+creation and endpoint registration.  See https://github.com/BlueOwlOpenSource/endpoint/blob/master/README.md
+for an example.
 
 Terminology
 
