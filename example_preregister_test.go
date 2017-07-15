@@ -78,7 +78,11 @@ func init() {
 	// so jsonifyResult continues its work.  When jsonifyResult returns, the
 	// handler chain is complete and the http server can form a reply from the
 	// ResponseWriter.
-	service.RegisterEndpoint("/example", exampleInjector, exampleEndpoint)
+	//
+	// Since service is WithMux, we can use gorilla mux modifiers when
+	// we register endpoints.  This allows us to trivially indicate that our
+	// example endpoint supports the GET method only.
+	service.RegisterEndpoint("/example", exampleInjector, exampleEndpoint).Methods("GET")
 }
 
 // This is the final endpoint handler.  The parameters it takes can

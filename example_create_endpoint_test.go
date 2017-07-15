@@ -2,7 +2,6 @@ package endpoint_test
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 
 	"github.com/BlueOwlOpenSource/endpoint"
@@ -12,7 +11,7 @@ import (
 // generates an http.HandlerFunc from a list of handlers.  The handlers will be called
 // in order.   In the example below, first WriteErrorResponse() will be called.  It
 // has an inner() func that it uses to invoke the rest of the chain.  When
-// WriteErrorResponse() calls it's inner() function, the db injector returned by
+// WriteErrorResponse() calls its inner() function, the db injector returned by
 // InjectDB is called.  If that does not return error, then the inline function below
 // to handle the endpint is called.
 func ExampleCreateEndpoint() {
@@ -21,7 +20,7 @@ func ExampleCreateEndpoint() {
 		WriteErrorResponse,
 		InjectDB("postgres", "postgres://..."),
 		func(r *http.Request, db *sql.DB, w http.ResponseWriter) error {
-			// ....
+			// Write response to w or return error...
 			return nil
 		}))
 }
@@ -30,7 +29,7 @@ func ExampleCreateEndpoint() {
 func WriteErrorResponse(inner func() endpoint.TerminalError, w http.ResponseWriter) {
 	err := inner()
 	if err != nil {
-		w.Write([]byte(fmt.Sprintf("Could not open database: %s", err)))
+		w.Write([]byte(err.Error()))
 		w.WriteHeader(500)
 	}
 }

@@ -28,6 +28,10 @@ type EndpointRegistration struct {
 	bound      bool
 }
 
+// EndpointRegistrationWithMux holds endpoint definitions for
+// services that will be Start()ed with gorilla mux.  Most of
+// the gorilla mux methods can be used with these endpoint
+// definitions.
 type EndpointRegistrationWithMux struct {
 	EndpointRegistration
 	muxroutes []func(*mux.Route) *mux.Route
@@ -68,7 +72,7 @@ func (r *EndpointRegistration) start(path string, binder EndpointBinder, preInje
 	binder(path, r.finalFunc)
 }
 
-// Start an endpoint: invokes the endpoint and binds it to the  path.   
+// Start an endpoint: invokes the endpoint and binds it to the  path.
 // If called more than once, subsequent calls to
 // EndpointRegistrationWithMux methods that act on the route will
 // only act on the last route bound.
