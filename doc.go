@@ -45,6 +45,10 @@ Basics
 To use the endpoint package, create services first.  After that the
 endpoints can be registered to the service and the service can be started.
 
+A simpler way to use endpoint is to use the CreateEndpoint function.  It
+converts a list of handlers into an http.HandlerFunc.  This bypasses service
+creation and endpoint registration.
+
 Terminology
 
 Service is a collection of endpoints that can be started together and may share
