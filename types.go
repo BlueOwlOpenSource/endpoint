@@ -33,9 +33,9 @@ type HandlerStaticInjectorType func(TypeMoreInputsExcludingRequest) TypeMoreOutp
 // are always invoked.
 type HandlerInjectorType func(TypeMoreInputs) TypeMoreOutputs
 
-// HandlerFallibleInjectorType: handlers taht match this type signature
+// HandlerFallibleInjectorType: handlers that match this type signature
 // will be invoked once per request (or more if middleware
-// re-invokes).  
+// re-invokes).
 //
 // These are a special kind of injector: they can fail.
 //
@@ -120,8 +120,8 @@ type TypeMoreReturnedValues interface{}
 
 // TerminalError is a standard error interface.  For fallible injectors
 // (matching the HandlerFallibleInjectorType type signature), TerminalError
-// must be the first return value. 
-// 
+// must be the first return value.
+//
 // A non-nil return value terminates the handler call chain.   All return
 // values, including TerminalError must be consumed by an upstream handler.
 type TerminalError interface {

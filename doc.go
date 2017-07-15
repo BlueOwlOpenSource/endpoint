@@ -7,7 +7,7 @@ handlers.
 
 Why
 
-Composite endpoints: endpoints are assembled from a collection handlers.
+Composite endpoints: endpoints are assembled from a collection of handlers.
 
 Before/after actions: the middleware handler type wraps the rest of the
 handler chain so that it can both inject items that are used downstream
