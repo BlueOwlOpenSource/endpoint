@@ -53,7 +53,7 @@ var annotateNotStatic = makeAnnotate(func(fm *funcOrigin) {
 //
 //	var counter = 0
 //	var counterLock sync.Mutex
-//      type InvocationCounter int
+//	type InvocationCounter int
 //	var CountEndpointInvocations = AnnotateSideEffects(func() InvocationCounter {
 //		counterLock.Lock()
 //		counter++
@@ -75,7 +75,7 @@ var annotateSideEffects = makeAnnotate(func(fm *funcOrigin) {
 // inner().  This is important only in the case when a downstream
 // handler is returning a value consumed by an upstream HandlerMiddlewareType
 // handler and that value has no zero value that reflect can generate
-// in the event that inner() is not called.  
+// in the event that inner() is not called.
 // Without AnnotateCallsInner(), some handler  sequences may be rejected.
 //
 // EXPERIMENTAL FEATURE. MAY BE REMOVED.

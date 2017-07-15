@@ -1,9 +1,10 @@
 // Stuff
 
 /*
-Package endpoint is a general purpose web server framework that provides a
-concise way to handle errors and inject dependencies into http endpoint
-handlers.
+
+Package endpoint is a general purpose lightweight non-opinionated web
+server framework that provides a concise way to handle errors and inject
+dependencies into http endpoint handlers.
 
 Why
 

@@ -57,6 +57,8 @@ func jsonifyResult(inner func(fromMiddleware) returnValue, w http.ResponseWriter
 	w.WriteHeader(200)
 }
 
+// Endpoints are grouped and started by services.  Handlers that are
+// common to all endpoints are attached to the service.
 var service = endpoint.PreRegisterServiceWithMux("example-service",
 	exampleStaticInjector,
 	jsonifyResult)
@@ -65,7 +67,17 @@ func init() {
 	// The /example endpoint is bound to a handler chain
 	// that combines the functions included at the service
 	// level and the functions included here.  The final chain is:
-	//	exampleStaticInjector, jsonifyResult, exampleInjector, exampleEndpoint
+	//	exampleStaticInjector, jsonifyResult, exampleInjector, exampleEndpoint.
+	// ExampleStaticInjector and jsonifyResult come from the service
+	// definition.  ExampleInjector and exampleEndpoint are attached when
+	// the endpoint is registered.
+	//
+	// Handlers will execute in the order of the chain: exampleStaticInjector
+	// then jsonifyResult.  When jsonifyResult calls inner(), exampleInjector
+	// runs, then exampleEndpoint.   When exampleEndpoint returns, inner() returns
+	// so jsonifyResult continues its work.  When jsonifyResult returns, the
+	// handler chain is complete and the http server can form a reply from the
+	// ResponseWriter.
 	service.RegisterEndpoint("/example", exampleInjector, exampleEndpoint)
 }
 
