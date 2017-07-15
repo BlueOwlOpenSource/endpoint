@@ -26,7 +26,7 @@ func InjectDB(driver, uri string) func() (endpoint.TerminalError, *sql.DB) {
 	}
 }
 
-func Example_CreateEndpoint() {
+func ExampleCreateEndpoint() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/my/endpoint", endpoint.CreateEndpoint(
 		WriteErrorResponse,
