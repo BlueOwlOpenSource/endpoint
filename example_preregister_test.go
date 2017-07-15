@@ -82,7 +82,8 @@ func init() {
 	// Since service is WithMux, we can use gorilla mux modifiers when
 	// we register endpoints.  This allows us to trivially indicate that our
 	// example endpoint supports the GET method only.
-	service.RegisterEndpoint("/example", exampleInjector, exampleEndpoint).Methods("GET")
+	service.RegisterEndpoint(
+		"/example", exampleInjector, exampleEndpoint).Methods("GET")
 }
 
 // This is the final endpoint handler.  The parameters it takes can
