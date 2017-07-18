@@ -34,8 +34,9 @@ type typeMoreReturnedValues interface{}
 // (matching the handlerFallibleInjectorType type signature), TerminalError
 // must be the first return value.
 //
-// A non-nil return value terminates the handler call chain.   All return
-// values, including TerminalError must be consumed by an upstream handler.
+// A non-nil return value terminates the handler call chain.   The
+// TerminalError return value (like other return values)
+// must be consumed by an upstream handler.
 type TerminalError interface {
 	error
 }

@@ -152,7 +152,11 @@ injector, none of the downstream handlers will be called.  The handler
 chain returns from that point with the TerminalError as a return
 value.  Since all return values must be consumed by a middleware handler,
 fallible injectors must come downstream from a middleware handler that
-takes TerminalError as a returned value.
+takes TerminalError as a returned value.  If a fallible injector returns
+nil for the TerminalError, the other output values are made available
+for downstream handlers to consume.  The other output values are not
+considered return values and are not available to be consumed by upstream
+middleware handlers.
 
 Some examples:
 

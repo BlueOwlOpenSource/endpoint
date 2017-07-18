@@ -148,6 +148,7 @@ func TestFallibleInjectorFailing(t *testing.T) {
 				err := inner()
 				t.Logf("wraper (after, err=%v)", err)
 				if err != nil {
+					assert.Equal(t, "bailing out", err.Error())
 					errorsCount++
 					w.WriteHeader(204)
 				}
@@ -219,9 +220,10 @@ func TestFallibleInjectorNotFailing(t *testing.T) {
 			func() (endpoint.TerminalError, int) {
 				t.Logf("endpoint init")
 				initCount++
-				return nil, initCount
+				return nil, 17
 			},
 			func(w http.ResponseWriter, i int) error {
+				assert.Equal(t, 17, i)
 				t.Logf("endpoint invoke")
 				w.WriteHeader(204)
 				invokeCount++
