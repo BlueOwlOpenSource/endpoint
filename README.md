@@ -1,6 +1,12 @@
-# endpoint
+# endpoint - dependency injection and wrapping for http handlers
 
-[GoDoc](https://godoc.org/github.com/BlueOwlOpenSource/endpoint)
+[![GoDoc](https://godoc.org/github.com/BlueOwlOpenSource/endpoint?status.png)](http://godoc.org/github.com/BlueOwlOpenSource/endpoint)
+
+Install:
+
+	go get github.com/BlueOwlOpenSource/endpoint
+
+---
 
 This package attempts to solve several issues with http endpoint handlers:
 
