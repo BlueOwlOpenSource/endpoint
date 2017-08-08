@@ -53,8 +53,8 @@ func jsonifyResult(inner func(fromMiddleware) returnValue, w http.ResponseWriter
 	v := inner("jsonify!")
 	w.Header().Set("Content-Type", "application/json")
 	encoded, _ := json.Marshal(v)
-	w.Write(encoded)
 	w.WriteHeader(200)
+	w.Write(encoded)
 }
 
 // Endpoints are grouped and started by services.  Handlers that are

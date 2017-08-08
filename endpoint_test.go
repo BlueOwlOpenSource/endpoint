@@ -464,6 +464,82 @@ func TestChains(t *testing.T) {
 				},
 			},
 		},
+		{
+			"static regression",
+			false,
+			[]interface{}{
+				endpoint.NewHandlerCollection("service",
+					func() paymentProvider {
+						return examplePaymentProvider(7)
+					},
+					func() tripsUri {
+						return "tu"
+					},
+					func() context.Context {
+						return context.Background()
+					},
+					endpoint.NewHandlerCollection("common-handlers",
+						func() logger {
+							return t
+						},
+						endpoint.NewHandlerCollection("base-collection",
+							func() csettings {
+								return make(map[string]string)
+							},
+							func(r *http.Request, l logger) logger {
+								return l
+							},
+							func(w http.ResponseWriter, l logger) enhancedWriter {
+								return &enhancedWriterImp{w}
+							},
+							func(w enhancedWriter, ac csettings) {},
+							func(inner func() jresult, w enhancedWriter, l logger) {
+								_ = inner()
+							},
+							func(inner func() (jresult, error2), l logger, w enhancedWriter) jresult {
+								res, _ := inner()
+								return res
+							},
+							func(inner func() error, l logger, w enhancedWriter) error2 {
+								return error2{inner()}
+							},
+							func(inner func(rbody) error, r *http.Request) error {
+								return inner([]byte("foo"))
+							},
+						),
+						endpoint.NewHandlerCollection("open-database",
+							func() dbname {
+								return "foo"
+							},
+							func(inner func(*sql.DB) error, name dbname) error {
+								db, err := sql.Open("postgres", string(name))
+								if err != nil {
+									return err
+								}
+								err = inner(db)
+								db.Close()
+								return err
+							},
+						),
+						func(inner func(*sql.Tx) error, db *sql.DB, l logger, w enhancedWriter) error {
+							tx, _ := db.Begin()
+							return inner(tx)
+						},
+						func() intType7 {
+							return 3
+						},
+					),
+				),
+				endpoint.NewHandlerCollection("endpoint-list",
+					func(i intType7) intType5 {
+						return 3
+					},
+					func(l logger, b rbody, tx *sql.Tx, i intType5) (jresult, error) {
+						return nil, nil
+					},
+				),
+			},
+		},
 	}
 
 	for _, test := range chainTests {

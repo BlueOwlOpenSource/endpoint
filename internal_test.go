@@ -195,6 +195,22 @@ var characterizeTests = []struct {
 		[]typeCode{noTypeCode, stringTC, boolTC}, []typeCode{intType3TC},
 		[]typeCode{intTC, errorTC}, []typeCode{errorTC, intType3TC},
 	},
+	{
+		"simple middleware regression",
+		func(i func() error, w http.ResponseWriter) {},
+		middlewareFunc,
+		lastF, staticT, panicF, nowPastT,
+		[]typeCode{noTypeCode, responseWriterTC}, []typeCode{},
+		[]typeCode{}, []typeCode{errorTC},
+	},
+	{
+		"simple endpoint regression",
+		func(i func() error, w http.ResponseWriter) {},
+		middlewareFunc,
+		lastT, staticF, panicT, nowPastT,
+		[]typeCode{noTypeCode, responseWriterTC}, []typeCode{},
+		[]typeCode{}, []typeCode{errorTC},
+	},
 }
 
 var boolTC = GetTypeCode(reflect.TypeOf((*bool)(nil)).Elem())
