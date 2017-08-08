@@ -163,6 +163,7 @@ func (s *Service) RegisterEndpoint(path string, funcs ...interface{}) *EndpointR
 // The endpoint initialization will not run until the service is started.  If the
 // service has already been started, the endpoint will be started immediately.
 func (s *ServiceRegistrationWithMux) RegisterEndpoint(path string, funcs ...interface{}) *EndpointRegistrationWithMux {
+	// fmt.Printf("REGISTER ENDPOINT -------------------------------------------------\n")
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	r := buildRegistrationPass1(s.collection, path, funcs...)
@@ -194,6 +195,7 @@ func (s *ServiceWithMux) RegisterEndpoint(path string, funcs ...interface{}) *mu
 }
 
 func buildRegistrationPass1(sc *HandlerCollection, path string, funcs ...interface{}) *EndpointRegistration {
+	// fmt.Printf("PASS 1 -------------------------------------------------\n")
 	c := newHandlerCollection(path, true, funcs...)
 	c = newHandlerCollection("endpoint:"+path, true, sc, c)
 
@@ -201,6 +203,7 @@ func buildRegistrationPass1(sc *HandlerCollection, path string, funcs ...interfa
 	if len(flattened) == 0 {
 		panic("at least one handler must be provided")
 	}
+
 	return buildRegistrationPass2(c.expectedInjections, flattened...)
 }
 
@@ -208,6 +211,7 @@ func buildRegistrationPass2(expectedInjections map[typeCode]bool, funcs ...*func
 	// Pass2: run up and down the list of handlers generate figure out the
 	// provided and returned interfaces.
 
+	// fmt.Printf("PASS 2 -------------------------------------------------\n")
 	// Figure out which injectors must be included to provide the inputs necessary for the endpoint
 	// and any terminal consumers.
 
@@ -224,6 +228,7 @@ func buildRegistrationPass2(expectedInjections map[typeCode]bool, funcs ...*func
 	inputsFor := make([]map[typeCode]typeCode, len(funcs))
 	for i, fm := range funcs {
 		_, _, flows, staticEnd := characterizeFuncDetails(fm, true, i == len(funcs)-1, i >= endStaticAt)
+		// fmt.Printf("::::::::::: Evaluating %s\n", fm.describe())
 		// fmt.Printf("FLOWS %s: %s\n", fm.describe(), flows.describe())
 		if staticEnd && i < endStaticAt {
 			endStaticAt = i
@@ -240,6 +245,7 @@ func buildRegistrationPass2(expectedInjections map[typeCode]bool, funcs ...*func
 		for _, out := range flows[outputParams] {
 			if out != noTypeCode {
 				provide.Add(out, i+2)
+				// fmt.Printf("Providing %s\n", out.Type())
 				if possiblyUsedDown[out] == 0 {
 					possiblyUsedDown[out] = -1
 				}
@@ -403,7 +409,7 @@ func buildRegistrationPass3(
 			}
 			i = j
 		default:
-			panic("should not be here")
+			panic(fmt.Sprintf("should not be here: %s", n.Tr.Class.Type()))
 		}
 	}
 
@@ -552,13 +558,14 @@ func characterizeFunc(fm *funcOrigin, panicOnFailure bool, last bool, alreadyPas
 	return c
 }
 
-func characterizeFuncDetails(fm *funcOrigin, panicOnFalure bool, last bool, alreadyPastStatic bool) (
+func characterizeFuncDetails(fm *funcOrigin, panicOnFailure bool, last bool, alreadyPastStatic bool) (
 	tr *typeRegistration,
 	t reflect.Type,
 	flows flowMapType,
 	nowPastStatic bool,
 ) {
 	t = reflect.TypeOf(fm.fn)
+	fmt.Printf(">>>%s<<< last-%v already-%v panic-%v\n", t, last, alreadyPastStatic, panicOnFailure)
 	rejectReasons := make([]string, len(primaryRegistrations))
 	nowPastStatic = alreadyPastStatic
 	var i int
@@ -616,9 +623,11 @@ RegistrationCheck:
 		}
 		return
 	}
-	if panicOnFalure {
+	if panicOnFailure {
 		panic(fmt.Sprintf("Could not match type of function %s to any prototype: %s", fm.describe(), strings.Join(rejectReasons, "; ")))
 	}
+	panic(fmt.Sprintf("Could not match type of function %s to any prototype: %s", fm.describe(), strings.Join(rejectReasons, "; ")))
+	fmt.Printf("Reject: %s: %s\n", fm.describe(), strings.Join(rejectReasons, "; "))
 	tr = nil
 	return
 }

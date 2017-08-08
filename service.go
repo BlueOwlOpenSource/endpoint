@@ -151,6 +151,17 @@ type funcOrigin struct {
 	callsInner  bool
 }
 
+func (fm *funcOrigin) Copy() *funcOrigin {
+	return &funcOrigin{
+		origin:      fm.origin,
+		index:       fm.index,
+		fn:          fm.fn,
+		sideEffects: fm.sideEffects,
+		pastStatic:  fm.pastStatic,
+		callsInner:  fm.callsInner,
+	}
+}
+
 type injectionWish typeCode
 
 // AutoInject makes a promise that values will be provided
@@ -194,40 +205,108 @@ func (c *HandlerCollection) flatten() []*funcOrigin {
 		flattened = append(flattened, c.collections[g]...)
 	}
 
-	// for i, f := range flattened {
-	// 	fmt.Printf("EP1: %d: %s\n", i, f.describe())
-	// }
+	// for i, f := range flattened { fmt.Printf("EP1: %d: %s\n", i, f.describe()) }
 	return flattened
 }
 
 func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *HandlerCollection {
+	// fmt.Printf("NEW HANDLER COLLECTION -------------------------------------------------\n")
+	nonStaticTypes := make(map[typeCode]bool)
 	c := &HandlerCollection{
 		name:               name,
 		collections:        make(map[string][]*funcOrigin),
 		expectedInjections: make(map[typeCode]bool),
 		injections:         make(map[typeCode]interface{}),
 	}
-	endOfStaticSeen := false
+
+	addFunc := func(endOfStaticSeen bool, isLast bool, fn interface{}, i int) bool {
+		fm, isFuncO := fn.(*funcOrigin)
+		if isFuncO {
+			// Previously annotated
+			fm = fm.Copy()
+		} else {
+			fm = &funcOrigin{
+				origin: name,
+				index:  i,
+				fn:     fn,
+			}
+		}
+
+		// fmt.Printf("AddFunc %T %s islast-%v i-%d\n" , fm.fn, fm.describe(), isLast, i)
+		fchar, ftype, flows, nowPastStatic := characterizeFuncDetails(fm, false, hasEndpoint && isLast, endOfStaticSeen)
+		if fchar == nil {
+			fm.panicf("could not characterize parameter %s-#%d (%s) as a valid handler", name, i, ftype)
+		}
+		// fmt.Printf("%s: GROUP %s\n" , fm.describe(), fchar.Group)
+		endOfStaticSeen = endOfStaticSeen || nowPastStatic
+		if fchar.Group == endpointGroup {
+			if !hasEndpoint {
+				fm.panicf("internal error: should not interpret anything as an endpoint at the service level")
+			}
+			if len(c.collections[fchar.Group]) > 0 {
+				panic("only one endpoint allowed")
+			}
+		}
+		if fchar.Group == staticGroup {
+			for _, in := range flows[inputParams] {
+				if nonStaticTypes[in] {
+					endOfStaticSeen = true
+					fchar, ftype, flows, nowPastStatic = characterizeFuncDetails(fm, false, hasEndpoint && isLast, endOfStaticSeen)
+					break
+				}
+			}
+		}
+		if endOfStaticSeen {
+			for _, out := range flows[outputParams] {
+				nonStaticTypes[out] = true
+			}
+		}
+		c.collections[fchar.Group] = append(c.collections[fchar.Group], fm)
+		fm.pastStatic = endOfStaticSeen
+		return endOfStaticSeen
+	}
+
+	outerEndOfStaticSeen := false
 	for i, fn := range funcs {
 		subcollection, isSubcollection := fn.(*HandlerCollection)
 		if isSubcollection {
 			if subcollection == nil {
 				continue
 			}
-			for group, handlers := range subcollection.collections {
-				switch group {
-				case endpointGroup:
-					if !hasEndpoint || i != len(funcs)-1 {
-						panic("should not have any endpoints in sub-HandlerCollections")
-					}
-					if len(c.collections[group]) > 0 {
-						panic("only one endpoint allowed")
-					}
-					fallthrough
-				case middlewareGroup, staticGroup:
-					c.collections[group] = append(c.collections[group], handlers...)
+			if len(subcollection.collections[endpointGroup]) > 0 {
+				if !hasEndpoint || i != len(funcs)-1 {
+					panic("should not have any endpoints in sub-HandlerCollections")
+				}
+				if len(c.collections[endpointGroup]) > 0 {
+					panic("only one endpoint allowed")
 				}
 			}
+			subEndOfStaticSeen := false
+			for j, fn := range subcollection.collections[staticGroup] {
+				// fmt.Printf("SG-AddFunc %#v\n" , fn)
+				subEndOfStaticSeen = addFunc(
+					subEndOfStaticSeen,
+					hasEndpoint &&
+						i == len(funcs)-1 &&
+						j == len(subcollection.collections[staticGroup])-1 &&
+						len(subcollection.collections[middlewareGroup]) == 0 &&
+						len(subcollection.collections[endpointGroup]) == 0,
+					fn,
+					j)
+			}
+			for j, fn := range subcollection.collections[middlewareGroup] {
+				// fmt.Printf("MG-AddFunc %#v\n" , fn)
+				subEndOfStaticSeen = addFunc(
+					subEndOfStaticSeen,
+					hasEndpoint &&
+						i == len(funcs)-1 &&
+						j == len(subcollection.collections[middlewareGroup]) &&
+						len(subcollection.collections[endpointGroup]) == 0,
+					fn,
+					j)
+			}
+			c.collections[endpointGroup] = append(c.collections[endpointGroup], subcollection.collections[endpointGroup]...)
+
 			for iw, _ := range subcollection.expectedInjections {
 				c.expectedInjections[iw] = true
 			}
@@ -240,39 +319,8 @@ func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *
 			continue
 		}
 
-		fm, isFuncO := fn.(*funcOrigin)
-		if isFuncO {
-			// Previously annotated
-			fm.origin = name
-			fm.index = i
-		} else {
-			fm = &funcOrigin{
-				origin: name,
-				index:  i,
-				fn:     fn,
-			}
-		}
-
-		fchar, ftype, _, nowPastStatic := characterizeFuncDetails(fm, false, hasEndpoint && i == len(funcs)-1, endOfStaticSeen)
-		if fchar == nil {
-			fm.panicf("could not characterize parameter #%d (%s) as a valid handler", i, ftype)
-		}
-		// fmt.Printf("%s: GROUP %s\n" , fm.describe(), fchar.Group)
-		endOfStaticSeen = endOfStaticSeen || nowPastStatic
-		switch fchar.Group {
-		case endpointGroup:
-			if !hasEndpoint {
-				fm.panicf("internal error: should not interpret anything as an endpoint at the service level")
-			}
-			if len(c.collections[fchar.Group]) > 0 {
-				panic("only one endpoint allowed")
-			}
-			fallthrough
-		case middlewareGroup, staticGroup:
-			c.collections[fchar.Group] = append(c.collections[fchar.Group], fm)
-		default:
-			fm.panicf("internal error: should not reach this point")
-		}
+		// fmt.Printf("OS-AddFunc %#v\n" , fn)
+		outerEndOfStaticSeen = addFunc(outerEndOfStaticSeen, hasEndpoint && i == len(funcs)-1, fn, i)
 	}
 	return c
 }
