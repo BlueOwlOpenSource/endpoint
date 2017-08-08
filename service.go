@@ -155,7 +155,7 @@ func (fm *funcOrigin) Copy() *funcOrigin {
 	return &funcOrigin{
 		origin:      fm.origin,
 		index:       fm.index,
-		fn:          fm.index,
+		fn:          fm.fn,
 		sideEffects: fm.sideEffects,
 		pastStatic:  fm.pastStatic,
 		callsInner:  fm.callsInner,
@@ -218,15 +218,12 @@ func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *
 		expectedInjections: make(map[typeCode]bool),
 		injections:         make(map[typeCode]interface{}),
 	}
-	endOfStaticSeen := false
 
-	addFunc := func(endOfStaticSeen bool, lastGroup bool, fn interface{}) bool {
+	addFunc := func(endOfStaticSeen bool, isLast bool, fn interface{}, i int) bool {
 		fm, isFuncO := fn.(*funcOrigin)
 		if isFuncO {
 			// Previously annotated
-			fm := fm.Copy()
-			fm.origin = name
-			fm.index = i
+			fm = fm.Copy()
 		} else {
 			fm = &funcOrigin{
 				origin: name,
@@ -235,7 +232,8 @@ func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *
 			}
 		}
 
-		fchar, ftype, flows, nowPastStatic := characterizeFuncDetails(fm, false, hasEndpoint && i == len(funcs)-1 && lastGroup, endOfStaticSeen)
+		// fmt.Printf("AddFunc %T %s islast-%v i-%d\n" , fm.fn, fm.describe(), isLast, i)
+		fchar, ftype, flows, nowPastStatic := characterizeFuncDetails(fm, false, hasEndpoint && isLast, endOfStaticSeen)
 		if fchar == nil {
 			fm.panicf("could not characterize parameter %s-#%d (%s) as a valid handler", name, i, ftype)
 		}
@@ -253,7 +251,7 @@ func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *
 			for _, in := range flows[inputParams] {
 				if nonStaticTypes[in] {
 					endOfStaticSeen = true
-					fchar, ftype, flows, nowPastStatic = characterizeFuncDetails(fm, false, hasEndpoint && i == len(funcs)-1 && lastGroup, endOfStaticSeen)
+					fchar, ftype, flows, nowPastStatic = characterizeFuncDetails(fm, false, hasEndpoint && isLast, endOfStaticSeen)
 					break
 				}
 			}
@@ -268,6 +266,7 @@ func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *
 		return endOfStaticSeen
 	}
 
+	outerEndOfStaticSeen := false
 	for i, fn := range funcs {
 		subcollection, isSubcollection := fn.(*HandlerCollection)
 		if isSubcollection {
@@ -282,12 +281,29 @@ func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *
 					panic("only one endpoint allowed")
 				}
 			}
-			endOfStatic := false
-			for _, fn := range subcollection.collections[staticGroup] {
-				endOfStatic = addFunc(endOfStatic, false, fn)
+			subEndOfStaticSeen := false
+			for j, fn := range subcollection.collections[staticGroup] {
+				// fmt.Printf("SG-AddFunc %#v\n" , fn)
+				subEndOfStaticSeen = addFunc(
+					subEndOfStaticSeen,
+					hasEndpoint &&
+						i == len(funcs)-1 &&
+						j == len(subcollection.collections[staticGroup])-1 &&
+						len(subcollection.collections[middlewareGroup]) == 0 &&
+						len(subcollection.collections[endpointGroup]) == 0,
+					fn,
+					j)
 			}
-			for _, fn := range subcollection.collections[middlewareGroup] {
-				endOfStatic = addFunc(endOfStatic, false, fn)
+			for j, fn := range subcollection.collections[middlewareGroup] {
+				// fmt.Printf("MG-AddFunc %#v\n" , fn)
+				subEndOfStaticSeen = addFunc(
+					subEndOfStaticSeen,
+					hasEndpoint &&
+						i == len(funcs)-1 &&
+						j == len(subcollection.collections[middlewareGroup]) &&
+						len(subcollection.collections[endpointGroup]) == 0,
+					fn,
+					j)
 			}
 			c.collections[endpointGroup] = append(c.collections[endpointGroup], subcollection.collections[endpointGroup]...)
 
@@ -303,7 +319,8 @@ func newHandlerCollection(name string, hasEndpoint bool, funcs ...interface{}) *
 			continue
 		}
 
-		endOfStaticSeen = addFunc(endOfStaticSeen, true, fn)
+		// fmt.Printf("OS-AddFunc %#v\n" , fn)
+		outerEndOfStaticSeen = addFunc(outerEndOfStaticSeen, hasEndpoint && i == len(funcs)-1, fn, i)
 	}
 	return c
 }

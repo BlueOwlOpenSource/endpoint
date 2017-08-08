@@ -324,7 +324,7 @@ func TestCheckMatch(t *testing.T) {
 	}
 }
 
-var i int
+var testI int
 var i3 intType3
 var di = &doesI{}
 var dj = &doesJ{}
@@ -333,18 +333,18 @@ var interfaceJType = reflect.TypeOf((*interfaceJ)(nil)).Elem()
 var interfaceKType = reflect.TypeOf((*interfaceK)(nil)).Elem()
 
 var provideSet1 = map[reflect.Type]int{
-	requestType:        1,
-	responseWriterType: 1,
-	reflect.TypeOf(i):  3,
-	reflect.TypeOf(i):  4,
+	requestType:           1,
+	responseWriterType:    1,
+	reflect.TypeOf(testI): 3,
+	reflect.TypeOf(testI): 4,
 }
 
 var provideSet2 = map[reflect.Type]int{
-	interfaceIType:     1,
-	interfaceJType:     2,
-	reflect.TypeOf(di): 3,
-	reflect.TypeOf(dj): 4,
-	reflect.TypeOf(i):  5,
+	interfaceIType:        1,
+	interfaceJType:        2,
+	reflect.TypeOf(di):    3,
+	reflect.TypeOf(dj):    4,
+	reflect.TypeOf(testI): 5,
 }
 
 var bestMatchTests = []struct {
