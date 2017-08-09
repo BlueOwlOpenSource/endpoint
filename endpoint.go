@@ -565,7 +565,6 @@ func characterizeFuncDetails(fm *funcOrigin, panicOnFailure bool, last bool, alr
 	nowPastStatic bool,
 ) {
 	t = reflect.TypeOf(fm.fn)
-	fmt.Printf(">>>%s<<< last-%v already-%v panic-%v\n", t, last, alreadyPastStatic, panicOnFailure)
 	rejectReasons := make([]string, len(primaryRegistrations))
 	nowPastStatic = alreadyPastStatic
 	var i int
@@ -627,7 +626,6 @@ RegistrationCheck:
 		panic(fmt.Sprintf("Could not match type of function %s to any prototype: %s", fm.describe(), strings.Join(rejectReasons, "; ")))
 	}
 	panic(fmt.Sprintf("Could not match type of function %s to any prototype: %s", fm.describe(), strings.Join(rejectReasons, "; ")))
-	fmt.Printf("Reject: %s: %s\n", fm.describe(), strings.Join(rejectReasons, "; "))
 	tr = nil
 	return
 }
